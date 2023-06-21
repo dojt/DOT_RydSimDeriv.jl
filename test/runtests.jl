@@ -29,10 +29,12 @@ using DOT_RydSimDeriv
 
 
 
+using JSON # Only for ignoring by JET
 
 @testset verbose=true "Testing DOT_RydSimDeriv.jl" begin
-    @test  :donk  skip=true
+    test_package(DOT_RydSimDeriv, ignored_modules=(AnyFrameModule(JSON.Parser),) )
 end
+
 
 #  @testset "A broken test:" begin
 #      @test DOODELDIDOO skip=true
