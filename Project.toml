@@ -2,3 +2,9 @@ name = "DOT_RydSimDeriv"
 uuid = "d044b169-1fcc-453b-a360-a6205f463680"
 authors = ["dojt <dotheis.work@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+DOT_NiceMath = "3e56a413-cb61-4004-9b36-fbc90ffc4c6e"
+DOT_RydSim = "16c21e78-c204-4711-8e6d-a01104899bbe"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
