@@ -39,10 +39,23 @@
 #              3.2.a. Δ Constructor                                                                           |
 #              3.2.b. Δ Callable                                                                              |
 #                                                                                                             |
+#        3.3.  EVF — Expectation Value Function                                                               |
 #                                                                                                             |
-#    4.  EVF — Expectation Value Function                                                                     |
+#        3.4.  Fourier spectrum bound                                                                         |
 #                                                                                                             |
-#    5.  ..............                                                                                       |
+#                                                                                                             |
+#    4.  Shift ruling                                                                                         |
+#                                                                                                             |
+#        4.1.  EVF-eval based (non-physical)                                                                  |
+#                                                                                                             |
+#              4.1.a. Type `Shift_Rule{PType_*}`                                                              |
+#              4.1.b. Callables                                                                               |
+#              4.1.c. Instances                                                                               |
+#                     • Symmetric Difference Quotient                                                         |
+#                                                                                                             |
+#        4.2.  Shot-based                                                                                     |
+#                                                                                                             |
+#                                                                                                             |
 #                                                                                                             |
 #—————————————————————————————————————————————————————————————————————————————————————————————————————————————+
 
@@ -67,17 +80,24 @@ Banchi-Crooks's "stochastic" shift rules, and the "Nyquist" shift rules.
 
 EVF = Expectation Value Function
 
-* Types with constructors [`Evolution_Ω`](@ref), [`Evolution_Δ`](@ref).
-
-
-
+* Types [`Evolution_Ω`](@ref), [`Evolution_Δ`](@ref) with constructors and callables;
+  the callables (almost) compute the expectation value function
+* Function [`evf`](@ref)`()` — based on the callable for the given evolution object.
+* Function [`λ`](@ref)`()`   — approx. lower bound on wavelength in the Fourier spectrum.
+* For EVF-eval based computation of the shift rule:
+  * Callable structs [`Shift_Rule`](@ref)`{PType_`\\*`}` where "\\*" is one of "Ω" or "Δ"
 """
 module DOT_RydSimDeriv
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 1.1. Exports
-export load_hw
-export get_hw_data, get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺
-export evf_Ω, evf_Ω
+export load_hw,
+       get_hw_data, get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺
+export Evolution_Ω, Evolution_Δ,
+       evf,
+       λ
+export Shift_Rule, PType_Ω, PType_Δ
+
+
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 1.1. Imports
 using DOT_NiceMath
@@ -96,7 +116,7 @@ using DOT_RydSim.HW_Descriptions:
 	HW_AWS_QuEra
 
 
-using Unitful: μs
+using Unitful: μs, ustrip
 using LinearAlgebra: Hermitian
 
 
@@ -151,6 +171,7 @@ _NT = @NamedTuple{
 				𝑡ᵒᶠᶠₘₐₓ     ::μs_t{ℚ},
 				𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ ::μs_t{ℚ},
 				𝑡ᵣₑₛ        ::μs_t{ℚ},
+	            𝛥𝑡ₘᵢₙ       ::μs_t{ℚ},
 				𝑡ₘₐₓ        ::μs_t{ℚ}
 		}
 
@@ -162,6 +183,7 @@ unitful rational number types:
 * `𝛺ₘₐₓ`, `𝛺ᵣₑₛ`;
 * `𝛥ₘₐₓ` `𝛥ᵣₑₛ`;
 * `𝑡ᵣₑₛ`;
+* `𝛥𝑡ₘᵢₙ`          — smallest positive time
 * `𝑡ₘₐₓ`           — max total evolution time
 * `𝑡ᵈᵒʷⁿ`          — time needed between 𝑡ᵒᶠᶠ and EOEv to allow for 
   full range of 𝛺 and 𝛥.
@@ -192,7 +214,7 @@ function get_hw_data(hw ::HW_Descr{ℚ}) ::_NT
 								 𝛥_𝑢𝑝𝑡𝑖𝑚𝑒,
 								 𝛥𝑡ₘᵢₙ);
 							𝛿=𝑡ᵣₑₛ),
-			𝑡ᵣₑₛ, 𝑡ₘₐₓ)
+			𝑡ᵣₑₛ, 𝛥𝑡ₘᵢₙ, 𝑡ₘₐₓ)
 end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 2.3. get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺()
@@ -245,7 +267,11 @@ end
 
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 3.1.a. Ω Constructor
 @doc raw"""
-Constructor
+Type `Evolution_Ω`
+
+Subtype of `Evolution_t`.  This doc doc docs the constructor and callable.
+
+## Constructor
 ```julia
 Evolution_Ω( 𝑡ᵒⁿ  ::μs_t{ℚ},
              𝑡ᵒᶠᶠ ::μs_t{ℚ}
@@ -265,6 +291,29 @@ Lower bounds for 𝑡ᵒᶠᶠ-𝑡ᵒⁿ are 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ 
 The quantities mentioned above are defined in the named tuple returned by
 [`get_hw_data`](@ref)`()`, except for 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺, which is returned by
 [`get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺`](@ref)`()`.
+
+
+## Callable
+```julia
+    (ev::Evolution_Ω)(𝛺 ::Rad_per_μs_t{ℚ}
+                      ;
+                      ϕ ::Vector{ℂ},
+                      R ::Hermitian{ℂ,Matrix{ℂ}},
+                      ψ ::Vector{ℂ}              ) ::ℂ
+```
+
+!!! warning "Warning: ψ is updated!"
+
+    The argument `ψ` gives the initial state of the evolution.
+    After the function returns, the **vector** `ψ` **contains the final state** of the evolution!
+
+Evaluates ``(\phi \mid U_R(\Omega) \psi)``, where ``U_R(\Omega)`` stands for the quantum evolution
+with Rabi frequency ``\Omega`` and the detuning given in the evolution object, with the
+"Rydberg"-term ``\hbar R`` in the Hamiltonian, i.e.,
+```math
+H/\hbar = \frac{\Omega}{2} X - \Delta |1\rangle\langle1| + R,
+```
+where |1⟩ is the Rydberg state vs |0⟩ the ground state.
 """
 function Evolution_Ω( 𝑡ᵒⁿ  ::μs_t{ℚ},
                       𝑡ᵒᶠᶠ ::μs_t{ℚ}
@@ -285,22 +334,15 @@ function Evolution_Ω( 𝑡ᵒⁿ  ::μs_t{ℚ},
     #
     # Check args
     #
-    𝑡ᵒⁿ  == δround_down( 𝑡ᵒⁿ ;𝛿=hw.𝑡ᵣₑₛ)  || throw(ArgumentError(
-                                             "𝑡ᵒⁿ must be multiple of HW 𝑡ᵣₑₛ"))
-    𝑡ᵒᶠᶠ == δround_down( 𝑡ᵒᶠᶠ ;𝛿=hw.𝑡ᵣₑₛ) || throw(ArgumentError(
-                                             "𝑡ᵒᶠᶠ must be multiple of HW 𝑡ᵣₑₛ"))
-    𝑇    == δround_down( 𝑇 ;𝛿=hw.𝑡ᵣₑₛ)    || throw(ArgumentError(
-                                             "𝑇 must be multiple of HW 𝑡ᵣₑₛ"))
-    𝑡ᵒⁿ + 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ ≤ 𝑡ᵒᶠᶠ              || throw(ArgumentError(
-                                             "𝑡ᵒᶠᶠ-𝑡ᵒⁿ must be ≥ 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ"))
-    𝑡ᵒⁿ + 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺 ≤ 𝑡ᵒᶠᶠ              || throw(ArgumentError(
-                                             "𝑡ᵒᶠᶠ-𝑡ᵒⁿ must be ≥ 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺"))
-    𝑡ᵒᶠᶠ ≤ 𝑡ᵒᶠᶠₘₐₓ                        || throw(ArgumentError(
-                                             "Need 𝑡ᵒᶠᶠ ≤ 𝑡ᵒᶠᶠₘₐₓ"))
-    𝑇 ≤ 𝑡ₘₐₓ                              || throw(ArgumentError(
-                                             "Need 𝑇 ≤ 𝑡ₘₐₓ"))
-    𝑡ᵒᶠᶠ + 𝑡ᵈᵒʷⁿ ≤ 𝑇                      || throw(ArgumentError(
-                                             "Need 𝑇 ≥ 𝑡ᵒᶠᶠ + 𝑡ᵈᵒʷⁿ"))
+    is_δrounded( 𝑡ᵒⁿ  ;𝛿=hw.𝑡ᵣₑₛ) || throw(ArgumentError("𝑡ᵒⁿ must be multiple of HW 𝑡ᵣₑₛ"))
+    is_δrounded( 𝑡ᵒᶠᶠ ;𝛿=hw.𝑡ᵣₑₛ) || throw(ArgumentError("𝑡ᵒᶠᶠ must be multiple of HW 𝑡ᵣₑₛ"))
+    is_δrounded( 𝑇    ;𝛿=hw.𝑡ᵣₑₛ) || throw(ArgumentError("𝑇 must be multiple of HW 𝑡ᵣₑₛ"))
+    𝑡ᵒⁿ + 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ ≤ 𝑡ᵒᶠᶠ      || throw(ArgumentError("𝑡ᵒᶠᶠ-𝑡ᵒⁿ must be ≥ 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ"))
+    𝑡ᵒⁿ + 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺 ≤ 𝑡ᵒᶠᶠ      || throw(ArgumentError("𝑡ᵒᶠᶠ-𝑡ᵒⁿ must be ≥ 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺"))
+    𝑡ᵒᶠᶠ ≤ 𝑡ᵒᶠᶠₘₐₓ                || throw(ArgumentError("Need 𝑡ᵒᶠᶠ ≤ 𝑡ᵒᶠᶠₘₐₓ"))
+    𝑇 ≤ 𝑡ₘₐₓ                      || throw(ArgumentError("Need 𝑇 ≤ 𝑡ₘₐₓ"))
+    𝑡ᵒᶠᶠ + 𝑡ᵈᵒʷⁿ ≤ 𝑇              || throw(ArgumentError("Need 𝑇 ≥ 𝑡ᵒᶠᶠ + 𝑡ᵈᵒʷⁿ"))
+
     #
     # Make Δ pulse
     #
@@ -349,17 +391,15 @@ function (ev::Evolution_Ω)(𝛺 ::Rad_per_μs_t{ℚ}
 	DOT_RydSim._check(pΩ)
 
 
-	ψᵤₛₑ = copy(ψ)
-
-	schröd!(  ψᵤₛₑ, ℝ(ev.𝑇)
+	schröd!(  ψ,   ℝ( ev.𝑇 )
 			  ;
-              𝑡₀ = ev.𝑡₀,
+              𝑡₀ = ℝ( ev.𝑡₀ ),
               Ω  = pΩ,
 			  Δ  = ev.pΔ,
 			  ε  = ev.ε,
 			  R             )
 
-	return ϕ' ⋅ ψᵤₛₑ
+	return ϕ' ⋅ ψ
 end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 3.2. Δ Evolution
@@ -379,7 +419,11 @@ end
 
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 3.2.a. Δ Constructor
 @doc raw"""
-Constructor
+Type `Evolution_Ω`
+
+Subtype of `Evolution_t`.  This doc doc docs the constructor and callable.
+
+## Constructor
 ```julia
 Evolution_Δ( 𝑡ᵒⁿ  ::μs_t{ℚ},
              𝑡ᵒᶠᶠ ::μs_t{ℚ}
@@ -400,6 +444,28 @@ A lower bound for 𝑡ᵒᶠᶠ is 𝑡ᵒⁿ + 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢ�
 The quantities mentioned above are defined in the named tuple returned by
 [`get_hw_data`](@ref)`()`, except for 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺, which is returned by
 [`get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺`](@ref)`()`.
+
+## Callable
+```julia
+    (ev::Evolution_Δ)(𝛥 ::Rad_per_μs_t{ℚ}
+                      ;
+                      ϕ ::Vector{ℂ},
+                      R ::Hermitian{ℂ,Matrix{ℂ}},
+                      ψ ::Vector{ℂ}              ) ::ℂ
+```
+
+!!! warning "Warning: ψ is updated!"
+
+    The argument `ψ` gives the initial state of the evolution.
+    After the function returns, the **vector** `ψ` **contains the final state** of the evolution!
+
+Evaluates ``(\phi \mid U_R(\Delta) \psi)``, where ``U_R(\Delta)`` stands for the quantum evolution
+with detuning ``\Delta`` and the Rabi frequency given in the evolution object, with the
+"Rydberg"-term ``\hbar R`` in the Hamiltonian, i.e.,
+```math
+H/\hbar = \frac{\Omega}{2} X - \Delta |1\rangle\langle1| + R,
+```
+where |1⟩ is the Rydberg state vs |0⟩ the ground state.
 """
 function Evolution_Δ( 𝑡ᵒⁿ  ::μs_t{ℚ},
                       𝑡ᵒᶠᶠ ::μs_t{ℚ}
@@ -420,22 +486,16 @@ function Evolution_Δ( 𝑡ᵒⁿ  ::μs_t{ℚ},
     #
     # Check args
     #
-    𝑡ᵒⁿ  == δround_down( 𝑡ᵒⁿ ;𝛿=hw.𝑡ᵣₑₛ)  || throw(ArgumentError(
-                                             "𝑡ᵒⁿ must be multiple of HW 𝑡ᵣₑₛ"))
-    𝑡ᵒᶠᶠ == δround_down( 𝑡ᵒᶠᶠ ;𝛿=hw.𝑡ᵣₑₛ) || throw(ArgumentError(
-                                             "𝑡ᵒᶠᶠ must be multiple of HW 𝑡ᵣₑₛ"))
-    𝑇    == δround_down( 𝑇 ;𝛿=hw.𝑡ᵣₑₛ)    || throw(ArgumentError(
-                                             "𝑇 must be multiple of HW 𝑡ᵣₑₛ"))
-    𝑡ᵒⁿ + 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ ≤ 𝑡ᵒᶠᶠ              || throw(ArgumentError(
-                                             "𝑡ᵒᶠᶠ-𝑡ᵒⁿ must be ≥ 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ"))
+    is_δrounded( 𝑡ᵒⁿ  ;𝛿=hw.𝑡ᵣₑₛ)   || throw(ArgumentError("𝑡ᵒⁿ must be multiple of HW 𝑡ᵣₑₛ"))
+    is_δrounded( 𝑡ᵒᶠᶠ ;𝛿=hw.𝑡ᵣₑₛ)   || throw(ArgumentError("𝑡ᵒᶠᶠ must be multiple of HW 𝑡ᵣₑₛ"))
+    is_δrounded( 𝑇    ;𝛿=hw.𝑡ᵣₑₛ)   || throw(ArgumentError("𝑇 must be multiple of HW 𝑡ᵣₑₛ"))
+    𝑡ᵒⁿ + 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ ≤ 𝑡ᵒᶠᶠ        || throw(ArgumentError("𝑡ᵒᶠᶠ-𝑡ᵒⁿ must be ≥ 𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ"))
     # ;
     # ;
-    𝑡ᵒᶠᶠ ≤ 𝑡ᵒᶠᶠₘₐₓ                        || throw(ArgumentError(
-                                             "Need 𝑡ᵒᶠᶠ ≤ 𝑡ᵒᶠᶠₘₐₓ"))
-    𝑇 ≤ 𝑡ₘₐₓ                              || throw(ArgumentError(
-                                             "Need 𝑇 ≤ 𝑡ₘₐₓ"))
-    𝑡ᵒᶠᶠ + 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺  + 𝑡ᵈᵒʷⁿ ≤ 𝑇       || throw(ArgumentError(
-                                             "Need 𝑇 ≥ 𝑡ᵒᶠᶠ + 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺 + 𝑡ᵈᵒʷⁿ"))
+    𝑡ᵒᶠᶠ ≤ 𝑡ᵒᶠᶠₘₐₓ                  || throw(ArgumentError("Need 𝑡ᵒᶠᶠ ≤ 𝑡ᵒᶠᶠₘₐₓ"))
+    𝑇 ≤ 𝑡ₘₐₓ                        || throw(ArgumentError("Need 𝑇 ≤ 𝑡ₘₐₓ"))
+    𝑡ᵒᶠᶠ + 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺  + 𝑡ᵈᵒʷⁿ ≤ 𝑇 || throw(ArgumentError("Need 𝑇 ≥ 𝑡ᵒᶠᶠ + 𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺 + 𝑡ᵈᵒʷⁿ"))
+
     #
     # Make Ω pulse
     #
@@ -483,9 +543,7 @@ function (ev::Evolution_Δ)(𝛥 ::Rad_per_μs_t{ℚ}
 	DOT_RydSim._check(pΔ)
 
 
-	ψᵤₛₑ = copy(ψ)
-
-	schröd!(  ψᵤₛₑ, ℝ(ev.𝑇)
+	schröd!(  ψ, ℝ(ev.𝑇)
 			  ;
               𝑡₀ = ev.𝑡₀,
 			  Δ  = pΔ,
@@ -493,11 +551,10 @@ function (ev::Evolution_Δ)(𝛥 ::Rad_per_μs_t{ℚ}
 			  ε  = ev.ε,
 			  R             )
 
-	return ϕ' ⋅ ψᵤₛₑ
+	return ϕ' ⋅ ψ
 end
 
-# ******************************************************************************************************************************
-# ——————————————————————————————————————————————————————————————————————————————————————————————————— 4. EVF
+# ——————————————————————————————————————————————————————————————————————————————————————————————————— 3.3. EVF
 
 @doc raw"""
 Function
@@ -509,7 +566,15 @@ Function
         R ::Hermitian{ℂ,Matrix{ℂ}},
         ψ ::Vector{ℂ}              ) ::ℝ   where{EVO<:Evolution_t}
 ```
-Calls the callable of the given Evolution object, `ev`.
+Calls the callable of the given Evolution object, `ev`, with initial state ψ and observable
+```math
+    2|\phi\rangle\langle\phi| - 1
+```
+
+!!! warning "Warning: ψ is updated!"
+
+    The argument `ψ` gives the initial state of the evolution.
+    After the function returns, the **vector** `ψ` **contains the final state** of the evolution!
 """
 function evf(𝑥  ::Rad_per_μs_t{ℚ},
              ev ::EVO
@@ -519,8 +584,179 @@ function evf(𝑥  ::Rad_per_μs_t{ℚ},
              ψ ::Vector{ℂ},
              kwargs...                  ) ::ℝ   where{EVO<:Evolution_t}
 
-        1 - 2⋅abs²( ev(𝑥; ϕ,R,ψ, kwargs...) )
+    2⋅abs²( ev(𝑥; ϕ,R,ψ, kwargs...) )   - 1
 end
 
+# ——————————————————————————————————————————————————————————————————————————————————————————————————— 3.4. Fourier band bound
+
+@doc raw"""
+Function `λ( ev ::Evolution )`
+
+Returns a simple approximate lower bound to the wavelengths occuring in the Fourier spectrum.
+"""
+λ(ev ::Evolution_Ω) =   2π/ustrip(μs, ev.Ω_𝑡ᵒᶠᶠ - ev.Ω_𝑡ᵒⁿ )
+λ(ev ::Evolution_Δ) =   2π/ustrip(μs, ev.Δ_𝑡ᵒᶠᶠ - ev.Δ_𝑡ᵒⁿ )
+
+
+# ******************************************************************************************************************************
+# ——————————————————————————————————————————————————————————————————————————————————————————————————— 4. Shift ruling
+
+# ——————————————————————————————————————————————————————————————————————————————————————————————————— 4.1. EVF-eval based
+
+# -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 4.1.a. Type `Shift_Rule`
+
+abstract type ParameterType_t end
+struct PType_Ω <: ParameterType_t end
+struct PType_Δ <: ParameterType_t end
+
+
+@doc raw"""
+Struct `Shift_Rule{PType}`
+
+Data to define
+```math
+    \sum_{j=1}^m  a_j \cdot f(x - s_j)
+```
+
+The type parameter `PType` can be one of: `PType_Ω`, `PType_Δ`.
+
+## Fields
+
+* `𝑥 ::Rad_per_μs_t{ℚ}`           — parameter value where shift rule is anchored
+* `𝑠 ::Vector{ Rad_per_μs_t{ℚ} }` — list of shifts from 𝑥
+* `a ::Vector{ ℝ }`               — coefficients of the shifts
+
+## Constructor and callable
+
+
+  * Use the keyword-argument constructor:
+
+    ```julia
+        Shift_Rule{PType}(; 𝑥, 𝑠, a ) ::Shift_Rule{PType}  where{PType}
+    ```
+
+  * The callables
+
+    ```julia
+        function (sr::Shift_Rule{PType_Ω})(ev ::Evolution_Ω ; ϕ,R,ψ) ::ℝ
+        function (sr::Shift_Rule{PType_Δ})(ev ::Evolution_Δ ; ϕ,R,ψ) ::ℝ
+    ```
+
+    compute the shift-rule by evaluating the expectation-value function [`evf`](@ref)`()`.
+
+    Unlike `evf()`, the **callables do not modify the vector `ψ`.**
+"""
+struct Shift_Rule{PType}
+    𝑥 ::Rad_per_μs_t{ℚ}
+    𝑠 ::Vector{ Rad_per_μs_t{ℚ} }
+    a ::Vector{ ℝ }
+
+    #
+    # Use kw-arg to try to ensure that D.A.U. doesn't call this by accident:
+    #
+    Shift_Rule{PType}(𝑥,𝑠,a;_checking::Bool) where{PType} = ( @assert _checking ; new(𝑥,𝑠,a) )
+end
+
+#                                                                                                   # `check_throw()`
+@doc raw"""
+Function
+```julia
+    check_throw(sr ::Shift_Rule{PType},
+                hw ::HW_Descr          ) ::Nothing  where{PType <: Union{PType_Ω,PType_Δ}}
+```
+
+check_throw(sr ::Shift_Rule, hw ::HW_Descr ) ::Nothing`
+
+Checks if the shift rule is conform with the hardware.  If a problem is found, an exception is
+*thrown*; otherwise `nothing` is returned.
+"""
+function check_throw(sr ::Shift_Rule{PType},
+                     hw ::HW_Descr          ) ::Nothing   where{PType<:Union{PType_Ω,PType_Δ}}
+
+    m =  length(sr.𝑠)
+    m == length(sr.a) ||  throw(ArgumentError("Lengths of vector `𝑠` ($(m)) and \
+                                               `a` ($(length(sr.a))) differ."))
+#    m ≥ 1             ||  throw(ArgumentError("Empty shift rule = silly")
+
+    #
+    # Check rounding and bounds
+    #
+
+    if     PType===PType_Ω      𝛿 = hw.𝛺ᵣₑₛ ; 𝑥ₘₐₓ = hw.𝛺ₘₐₓ
+    elseif PType===PType_Δ      𝛿 = hw.𝛥ᵣₑₛ ; 𝑥ₘₐₓ = hw.𝛥ₘₐₓ
+    else                        throw(Error("How did you manage to get here?!??"))
+    end
+
+    (;𝑥) = sr
+
+    is_δrounded(𝑥;𝛿)                          || throw(ArgumentError(
+                              "`𝑥` is not aligned to HW resolution."))
+
+    all(  is_δrounded(𝑠;𝛿)    for 𝑠 ∈ sr.𝑠  ) || throw(ArgumentError(
+                              "Not all shifts `𝑠` are aligned to HW resolution."))
+
+    all(  -𝑥ₘₐₓ ≤ 𝑥-𝑠 ≤ 𝑥ₘₐₓ  for 𝑠 ∈ sr.𝑠  ) || throw(ArgumentError(
+                              "Not all shifts land in the HW parameter range."))
+
+    -𝑥ₘₐₓ ≤ 𝑥 ≤ 𝑥ₘₐₓ                          || throw(ArgumentError(
+                              "User is a fucking idiot."))
+
+    return nothing   # All okay!
+end #^ check_throw()
+
+
+
+function Shift_Rule{PType}(;
+                           𝑥  ::Rad_per_μs_t{ℚ},                                                   # Constructor for Shift_Rule 
+                           𝑠  ::Vector{ Rad_per_μs_t{ℚ} },
+                           a  ::Vector{ ℝ }
+                           hw ::HW_Descr
+                           ) ::Shift_Rule{PType}  where{PType<:Union{PType_Ω,PType_Δ}}
+
+    sr = Shift_Rule{PType}(𝑥,𝑠,a
+                           ; _checking=true)
+    check_throw(sr,hw)
+
+    return sr
+end
+
+# -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 4.1.b. Callables
+
+(sr::Shift_Rule{PType_Ω})(ev ::Evolution_Ω ; ϕ,R,ψ) ::ℝ =
+    let 𝑥      = ev.𝑥,
+        ψᶜᵒᵖʸ  = similar(ψ),
+        f(𝑢)   = evf(𝑢, ev ; ϕ,R, ψ=(ψᶜᵒᵖʸ .= ψ))
+
+        sum(   a⋅f(𝑥-𝑠)   for (a,𝑠) ∈ zip( ev.a, ev.𝑠 )   )
+    end
+
+(sr::Shift_Rule{PType_Δ})(ev ::Evolution_Δ ; ϕ,R,ψ) ::ℝ =
+    let 𝑥      = ev.𝑥,
+        ψᶜᵒᵖʸ  = similar(ψ),
+        f(𝑢)   = evf(𝑢, ev ; ϕ,R, ψ=(ψᶜᵒᵖʸ .= ψ))
+
+        sum(   a⋅f(𝑥-𝑠)   for (a,𝑠) ∈ zip( ev.a, ev.𝑠 )   )
+    end
+
+# -      -      -      -      -      -      -      -      -      -      -      -      -      -      - • Symmetric Difference Quotient
+@doc raw"""
+"""
+function make_SymDiffQuot(::  Type{PType_Ω},
+                          ;
+                          𝛺  ::Rad_per_μs_t{ℚ},
+                          n  ::Int,
+                          hw ::HW_Descr        ) ::Shift_Rule{PType_Ω}
+    n ≥ 1 || throw(ArgumentError("Need n ≥ 1"))
+    𝜖 = max(n⋅hw.𝛺ᵣₑₛ)
+
+    # check 𝛺 bounds, rounding;
+    # check 𝛺 ± 𝜖 bound
+    # 𝜖
+end
+
+
+
+
 end #^ module DOT_RydSimDeriv
-# EOF
+# *************************************************************************************************** EOF
+#EOF
