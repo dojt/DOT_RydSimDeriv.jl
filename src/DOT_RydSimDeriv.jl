@@ -74,7 +74,9 @@ Banchi-Crooks's "stochastic" shift rules, and the "Nyquist" shift rules.
 ### Interface with lower stack
 
 * Function [`load_hw`](@ref)`()` — load hardware configuration from file
-* Functions [`get_hw_data`](@ref)`()`, [`get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺`](@ref)`()` — extract hw data
+
+* Functions [`get_hw_data`](@ref)`()` (returns struct [`HW_Data`](@ref)) and
+  [`get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺`](@ref)`()` — extract hw data
 
 ### Defining and evaluation EVFs
 
@@ -84,14 +86,20 @@ EVF = Expectation Value Function
   the callables (almost) compute the expectation value function
 * Function [`evf`](@ref)`()` — based on the callable for the given evolution object.
 * Function [`λ`](@ref)`()`   — approx. lower bound on wavelength in the Fourier spectrum.
-* For EVF-eval based computation of the shift rule:
-  * Callable structs [`Shift_Rule`](@ref)`{PType_`\\*`}` where "\\*" is one of "Ω" or "Δ"
+
+### Shift rules — EVF-eval based
+
+* Struct [`Shift_Rule`](@ref)`{PType_`\\*`}` where "\\*" is one of "Ω" or "Δ"
+  * Objects are callable.
+* Symmetric Difference Quotient:
+  * Function [`make_SymDiffQuot`](@ref)`() ::Shift_Rule` — make SR with given ``\varepsilon``
+  * Helper fn [`get_𝑥ₘₐₓ_SymDiffQuot`](@ref)`()`
 """
 module DOT_RydSimDeriv
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 1.1. Exports
 export load_hw,
-       get_hw_data, get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺
+       HW_Data, get_hw_data, get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺
 export Evolution_Ω, Evolution_Δ,
        evf,
        λ
@@ -105,18 +113,19 @@ using DOT_NiceMath.NumbersF64
 
 using DOT_RydSim
 using DOT_RydSim:
-    μs_t,
-    Rad_per_μs_t
+      μs_t,
+      Rad_per_μs_t
 
 
 using DOT_RydSim.HW_Descriptions:
-    HW_Descr,
-	default_HW_Descr,
-	fileread_HW_Descr,
-	HW_AWS_QuEra
+      HW_Descr,
+      default_HW_Descr,
+      fileread_HW_Descr,
+      HW_AWS_QuEra
 
 
-using Unitful: μs, ustrip
+using Unitful
+using Unitful:       μs, ustrip
 using LinearAlgebra: Hermitian
 
 
@@ -162,59 +171,62 @@ end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 2.2. get_hw_data()
 
-_NT = @NamedTuple{
-				_blah::Nothing,
-				𝛺ₘₐₓ        ::Rad_per_μs_t{ℚ},
-				𝛺ᵣₑₛ        ::Rad_per_μs_t{ℚ},
-				𝛥ₘₐₓ        ::Rad_per_μs_t{ℚ}, 𝛥ᵣₑₛ::Rad_per_μs_t{ℚ},
-				𝑡ᵈᵒʷⁿ       ::μs_t{ℚ},
-				𝑡ᵒᶠᶠₘₐₓ     ::μs_t{ℚ},
-				𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ ::μs_t{ℚ},
-				𝑡ᵣₑₛ        ::μs_t{ℚ},
-	            𝛥𝑡ₘᵢₙ       ::μs_t{ℚ},
-				𝑡ₘₐₓ        ::μs_t{ℚ}
-		}
-
 @doc raw"""
-Function `get_hw_data(::HW_Descr) ::NamedTuple`
-
-Returns a named tuple with the following fields, all of
+Struct `HW_Data`
+Abstraction layer for info about HW needed for parameter arithmetic.  The fields are of
 unitful rational number types:
 * `𝛺ₘₐₓ`, `𝛺ᵣₑₛ`;
 * `𝛥ₘₐₓ` `𝛥ᵣₑₛ`;
 * `𝑡ᵣₑₛ`;
 * `𝛥𝑡ₘᵢₙ`          — smallest positive time
 * `𝑡ₘₐₓ`           — max total evolution time
-* `𝑡ᵈᵒʷⁿ`          — time needed between 𝑡ᵒᶠᶠ and EOEv to allow for 
-  full range of 𝛺 and 𝛥.
+* `𝑡ᵈᵒʷⁿ`          — time needed between 𝑡ᵒᶠᶠ and EOEv to allow for full range of 𝛺 and 𝛥.
 * `𝑡ᵒᶠᶠₘₐₓ`        — largest switch-off time which allows full range of 𝛺 and 𝛥
-* `𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ`    — smallest duration ``t^{\text{off}}-t^{\text{on}}``
-  which allows full range of 𝛺 and 𝛥
+* `𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ`    — smallest duration ``t^{\text{off}}-t^{\text{on}}`` which allows full range
+  of 𝛺 and 𝛥
 """
-function get_hw_data(hw ::HW_Descr{ℚ}) ::_NT
+@kwdef struct HW_Data
+    𝛺ₘₐₓ        ::Rad_per_μs_t{ℚ}
+    𝛺ᵣₑₛ        ::Rad_per_μs_t{ℚ}
+    𝛥ₘₐₓ        ::Rad_per_μs_t{ℚ}
+    𝛥ᵣₑₛ        ::Rad_per_μs_t{ℚ}
+    𝑡ᵈᵒʷⁿ       ::μs_t{ℚ}
+    𝑡ᵒᶠᶠₘₐₓ     ::μs_t{ℚ}
+    𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ ::μs_t{ℚ}
+    𝑡ᵣₑₛ        ::μs_t{ℚ}
+    𝛥𝑡ₘᵢₙ       ::μs_t{ℚ}
+    𝑡ₘₐₓ        ::μs_t{ℚ}
+end
 
-	( ; 𝛺ₘₐₓ, 𝛺ᵣₑₛ, 𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, 𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤, φᵣₑₛ,
-		𝛥ₘₐₓ, 𝛥ᵣₑₛ, 𝛥_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, 𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
-		𝑡ₘₐₓ, 𝑡ᵣₑₛ, 𝛥𝑡ₘᵢₙ                               ) = hw
+@doc raw"""
+Function `get_hw_data(::HW_Descr) ::HW_Data`
 
-	𝛺_𝑢𝑝𝑡𝑖𝑚𝑒 = 𝛺ₘₐₓ / 𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤 ; 𝛺_𝑑𝑜𝑤𝑛𝑡𝑖𝑚𝑒 = 𝛺ₘₐₓ / 𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤
-	𝛥_𝑢𝑝𝑡𝑖𝑚𝑒 = 𝛥ₘₐₓ / 𝛥_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤 ; 𝛥_𝑑𝑜𝑤𝑛𝑡𝑖𝑚𝑒 = 𝛥ₘₐₓ / 𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤
+"""
+function get_hw_data(hw ::HW_Descr{ℚ}) ::HW_Data
+
+    ( ; 𝛺ₘₐₓ, 𝛺ᵣₑₛ, 𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, 𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤, φᵣₑₛ,
+      𝛥ₘₐₓ, 𝛥ᵣₑₛ, 𝛥_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, 𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
+      𝑡ₘₐₓ, 𝑡ᵣₑₛ, 𝛥𝑡ₘᵢₙ                               ) = hw
+
+    𝛺_𝑢𝑝𝑡𝑖𝑚𝑒 = 𝛺ₘₐₓ / 𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤 ; 𝛺_𝑑𝑜𝑤𝑛𝑡𝑖𝑚𝑒 = 𝛺ₘₐₓ / 𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤
+    𝛥_𝑢𝑝𝑡𝑖𝑚𝑒 = 𝛥ₘₐₓ / 𝛥_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤 ; 𝛥_𝑑𝑜𝑤𝑛𝑡𝑖𝑚𝑒 = 𝛥ₘₐₓ / 𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤
 
     𝑡ᵈᵒʷⁿ = δround_up(   max(𝛺_𝑑𝑜𝑤𝑛𝑡𝑖𝑚𝑒,
-			                 𝛥_𝑑𝑜𝑤𝑛𝑡𝑖𝑚𝑒);
-			             𝛿=𝑡ᵣₑₛ )
+			     𝛥_𝑑𝑜𝑤𝑛𝑡𝑖𝑚𝑒);
+			 𝛿=𝑡ᵣₑₛ )
 
-	return (_blah=nothing,
-			𝛺ₘₐₓ, 𝛺ᵣₑₛ,
-			𝛥ₘₐₓ, 𝛥ᵣₑₛ,
-            𝑡ᵈᵒʷⁿ,
-			𝑡ᵒᶠᶠₘₐₓ     = 𝑡ₘₐₓ - 𝑡ᵈᵒʷⁿ,
-			𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ = δround_up(
-							max( 𝛺_𝑢𝑝𝑡𝑖𝑚𝑒,
-								 𝛥_𝑢𝑝𝑡𝑖𝑚𝑒,
-								 𝛥𝑡ₘᵢₙ);
-							𝛿=𝑡ᵣₑₛ),
-			𝑡ᵣₑₛ, 𝛥𝑡ₘᵢₙ, 𝑡ₘₐₓ)
+    return HW_Data(;
+	    𝛺ₘₐₓ, 𝛺ᵣₑₛ,
+	    𝛥ₘₐₓ, 𝛥ᵣₑₛ,
+        𝑡ᵈᵒʷⁿ,
+	    𝑡ᵒᶠᶠₘₐₓ     = 𝑡ₘₐₓ - 𝑡ᵈᵒʷⁿ,
+	    𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ = δround_up(
+		                    max( 𝛺_𝑢𝑝𝑡𝑖𝑚𝑒,
+					 𝛥_𝑢𝑝𝑡𝑖𝑚𝑒,
+					 𝛥𝑡ₘᵢₙ);
+		          𝛿=𝑡ᵣₑₛ),
+	    𝑡ᵣₑₛ, 𝛥𝑡ₘᵢₙ, 𝑡ₘₐₓ
+    )
 end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 2.3. get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺()
@@ -661,17 +673,15 @@ end
 @doc raw"""
 Function
 ```julia
-    check_throw(sr ::Shift_Rule{PType},
-                hw ::HW_Descr          ) ::Nothing  where{PType <: Union{PType_Ω,PType_Δ}}
+    check_throw(sr  ::Shift_Rule{PType},
+                hwd ::HW_Data           ) ::Nothing  where{PType <: Union{PType_Ω,PType_Δ}}
 ```
-
-check_throw(sr ::Shift_Rule, hw ::HW_Descr ) ::Nothing`
 
 Checks if the shift rule is conform with the hardware.  If a problem is found, an exception is
 *thrown*; otherwise `nothing` is returned.
 """
-function check_throw(sr ::Shift_Rule{PType},
-                     hw ::HW_Descr          ) ::Nothing   where{PType<:Union{PType_Ω,PType_Δ}}
+function check_throw(sr  ::Shift_Rule{PType},
+                     hwd ::HW_Data           ) ::Nothing   where{PType<:Union{PType_Ω,PType_Δ}}
 
     m =  length(sr.𝑠)
     m == length(sr.a) ||  throw(ArgumentError("Lengths of vector `𝑠` ($(m)) and \
@@ -682,9 +692,9 @@ function check_throw(sr ::Shift_Rule{PType},
     # Check rounding and bounds
     #
 
-    if     PType===PType_Ω      𝛿 = hw.𝛺ᵣₑₛ ; 𝑥ₘₐₓ = hw.𝛺ₘₐₓ
-    elseif PType===PType_Δ      𝛿 = hw.𝛥ᵣₑₛ ; 𝑥ₘₐₓ = hw.𝛥ₘₐₓ
-    else                        throw(Error("How did you manage to get here?!??"))
+    if     PType===PType_Ω      𝛿 = hwd.𝛺ᵣₑₛ ; 𝑥ₘₐₓ = hwd.𝛺ₘₐₓ
+    elseif PType===PType_Δ      𝛿 = hwd.𝛥ᵣₑₛ ; 𝑥ₘₐₓ = hwd.𝛥ₘₐₓ
+    else                        error("How did you manage to get here?!??")
     end
 
     (;𝑥) = sr
@@ -707,15 +717,15 @@ end #^ check_throw()
 
 
 function Shift_Rule{PType}(;
-                           𝑥  ::Rad_per_μs_t{ℚ},                                                   # Constructor for Shift_Rule 
-                           𝑠  ::Vector{ Rad_per_μs_t{ℚ} },
-                           a  ::Vector{ ℝ }
-                           hw ::HW_Descr
+                           𝑥   ::Rad_per_μs_t{ℚ},                                                   # Constructor for Shift_Rule 
+                           𝑠   ::Vector{ Rad_per_μs_t{ℚ} },
+                           a   ::Vector{ ℝ },
+                           hwd ::HW_Data
                            ) ::Shift_Rule{PType}  where{PType<:Union{PType_Ω,PType_Δ}}
 
     sr = Shift_Rule{PType}(𝑥,𝑠,a
                            ; _checking=true)
-    check_throw(sr,hw)
+    check_throw(sr,hwd)
 
     return sr
 end
@@ -723,36 +733,63 @@ end
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 4.1.b. Callables
 
 (sr::Shift_Rule{PType_Ω})(ev ::Evolution_Ω ; ϕ,R,ψ) ::ℝ =
-    let 𝑥      = ev.𝑥,
+    let 𝑥      = sr.𝑥,
         ψᶜᵒᵖʸ  = similar(ψ),
         f(𝑢)   = evf(𝑢, ev ; ϕ,R, ψ=(ψᶜᵒᵖʸ .= ψ))
 
-        sum(   a⋅f(𝑥-𝑠)   for (a,𝑠) ∈ zip( ev.a, ev.𝑠 )   )
+        sum(   a⋅f(𝑥-𝑠)   for (a,𝑠) ∈ zip( sr.a, sr.𝑠 )   )
     end
 
 (sr::Shift_Rule{PType_Δ})(ev ::Evolution_Δ ; ϕ,R,ψ) ::ℝ =
-    let 𝑥      = ev.𝑥,
+    let 𝑥      = sr.𝑥,
         ψᶜᵒᵖʸ  = similar(ψ),
         f(𝑢)   = evf(𝑢, ev ; ϕ,R, ψ=(ψᶜᵒᵖʸ .= ψ))
 
-        sum(   a⋅f(𝑥-𝑠)   for (a,𝑠) ∈ zip( ev.a, ev.𝑠 )   )
+        sum(   a⋅f(𝑥-𝑠)   for (a,𝑠) ∈ zip( sr.a, sr.𝑠 )   )
     end
 
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - • Symmetric Difference Quotient
+
+@doc raw"""
+
+"""
+function get_𝑥ₘₐₓ_SymDiffQuot(::  Type{PType_Ω},
+                              ;
+                              n   ::Int,
+                              hwd ::HW_Data     ) ::Rad_per_μs_t{ℚ}
+    𝜖 = n⋅hwd.𝛺ᵣₑₛ
+    return hwd.𝛺ₘₐₓ - 𝜖
+end
+
+
 @doc raw"""
 """
 function make_SymDiffQuot(::  Type{PType_Ω},
                           ;
-                          𝛺  ::Rad_per_μs_t{ℚ},
-                          n  ::Int,
-                          hw ::HW_Descr        ) ::Shift_Rule{PType_Ω}
+                          𝛺   ::Rad_per_μs_t{ℚ},
+                          n   ::Int,
+                          hwd ::HW_Data        ) ::Shift_Rule{PType_Ω}
     n ≥ 1 || throw(ArgumentError("Need n ≥ 1"))
-    𝜖 = max(n⋅hw.𝛺ᵣₑₛ)
 
-    # check 𝛺 bounds, rounding;
-    # check 𝛺 ± 𝜖 bound
-    # 𝜖
-end
+    𝜀         = n⋅hwd.𝛺ᵣₑₛ
+    let 𝑥ₘₐₓ = get_𝑥ₘₐₓ_SymDiffQuot(PType_Ω;n,hwd),
+        𝛿    = hwd.𝛺ᵣₑₛ
+
+        -𝑥ₘₐₓ    ≤ abs(𝛺) ≤    +𝑥ₘₐₓ   || throw(ArgumentError("𝛺 out hw range."))
+        -hwd.𝛺ₘₐₓ ≤ abs(𝛺) ≤ +hwd.𝛺ₘₐₓ || throw(ArgumentError("𝛺 out of shift range."))
+        -hwd.𝛺ₘₐₓ ≤ 𝛺-𝜀 &&
+            𝛺+𝜀 ≤           +hwd.𝛺ₘₐₓ  || throw(ArgumentError("Paranoid for a 𝒓𝒆𝒂𝒔𝒐𝒏!!"))
+
+        is_δrounded(𝛺     ; 𝛿)   || throw(ArgumentError("𝛺 not aligned with HW resolution."))
+        is_δrounded(𝛺 - 𝜀 ; 𝛿)   || throw(ArgumentError("𝛺-𝜀 not aligned with HW resolution."))
+        is_δrounded(𝛺 + 𝜀 ; 𝛿)   || throw(ArgumentError("𝛺+𝜀 not aligned with HW resolution."))
+    end
+
+    α = ℝ(  1 / ustrip(u"μs^(-1)", 2𝜀)  )
+    return Shift_Rule{PType_Ω}( ;  𝑥  = 𝛺,
+                                𝑠     = Rad_per_μs_t{ℚ}[ -𝜀 , +𝜀 ],
+                                a     =                [ +α , -α ]  )
+end #^ make_SymDiffQuot
 
 
 
