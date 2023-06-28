@@ -1,0 +1,19 @@
+#+Title:  Readme for RydSimDeriv package
+#+Author: Dirk Oliver Theis, Theoretical Computer Science, University of Tartu, Estonia
+
+* Derivatives for quantum simulations of arrays of Rydberg atoms.
+
+Based on [DOT_RydSim.jl](https://github.com/dojt/DOT_RydSimDeriv.jl).
+
+** TODO
+   [ ] Extend `RydSim.jl` and to 3 level atoms with Raman pulse on the lower two.
+
+
+** Version History
+
+Time goes up!
+
+
+****  **v0.1.0**  Initial version
+
+EOF
