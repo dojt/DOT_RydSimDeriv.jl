@@ -15,6 +15,6 @@ Based on [DOT_RydSim.jl](https://github.com/dojt/DOT_RydSimDeriv.jl).
 /Time goes up!/
 
 
-****  *v0.1.0*  Initial version
++ *v0.1.0*  Initial version
 
 EOF
