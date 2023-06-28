@@ -3,7 +3,7 @@
 
 Derivatives for quantum simulations of arrays of Rydberg atoms.
 
-Based on [[https://github.com/dojt/DOT_RydSimDeriv.jl][DOT_RydSim.jl]]
+Based on [[https://github.com/dojt/DOT_RydSim.jl][DOT_RydSim.jl]]
 
 ** TODO
 
