@@ -6,8 +6,8 @@
 Based on [DOT_RydSim.jl](https://github.com/dojt/DOT_RydSimDeriv.jl).
 
 ** TODO
-   [ ] Figure out how Org really works...
-   [ ] Extend `RydSim.jl` and to 3 level atoms with Raman pulse on the lower two.
+
+- [ ]  Figure out how Org really works...
 
 
 ** Version History
