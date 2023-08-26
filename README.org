@@ -1,20 +1,35 @@
-#+Title:  Readme for RydSimDeriv package
-#+Author: Dirk Oliver Theis, Theoretical Computer Science, University of Tartu, Estonia
+#+TITLE:  Readme for RydSimDeriv package
+#+AUTHOR: Dirk Oliver Theis, Theoretical Computer Science, University of Tartu, Estonia
 
 Derivatives for quantum simulations of arrays of Rydberg atoms.
 
 Based on [[https://github.com/dojt/DOT_RydSim.jl][DOT_RydSim.jl]]
 
-** TODO
 
-- [ ]  Figure out how Org really works...
+** TODO Tasks & Questions For Future Versions [0/2]
+
+    + [ ] =JET.jl=-testing is 💩 because all errors that occur in ~Base~ (!!) are excluded.
+
+      - [ ] There are currently no other tests....
+
+    + [ ] Shift rules and whatnot have moved to package =Rydberg.jl=
+      (in repo =Secret-ShiftRules=).  This means:
+
+      - [ ] the functions in §4 of =src/DOT_RydSimDeriv.jl= are obsolete
+
+      - [ ] ... the name of the package is kinda wrong....
 
 
 ** Version History
 
 /Time goes up!/
 
+*** *v0.2.0*  API-breaking: Now Eval-functions take `𝚷`-matrix instead of ϕ-vector
 
-+ *v0.1.0*  Initial version
+*** *v0.1.0*  Initial version
 
-EOF
+
+* End of Org File
+# Local Variables:
+# fill-column: 115
+# End:

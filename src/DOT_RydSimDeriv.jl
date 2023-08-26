@@ -146,27 +146,26 @@ The `filename` can be either a string identifying a file name, or the symbol `:d
 The only file type currently supported is AWS-QuEra's (`HW_AWS_QuEra`).
 """
 function load_hw(filename ::String
-				;
-				Ω_downslew_factor = 1//1,
-				Δ_downslew_factor = 1//1              ) ::HW_Descr{ℚ}
+		 ;
+		 Ω_downslew_factor = 1//1,
+		 Δ_downslew_factor = 1//1              ) ::HW_Descr{ℚ}
 
-	return fileread_HW_Descr(HW_AWS_QuEra
-							;   filename,
-								ℤ,
-								Ω_downslew_factor,
-								Δ_downslew_factor )
+    return fileread_HW_Descr(HW_AWS_QuEra
+			     ;   filename,
+			     ℤ,
+			     Ω_downslew_factor,
+			     Δ_downslew_factor )
 end
 
-function load_hw(select ::Symbol =:default
-				;
-				Ω_downslew_factor = 1//1,
-				Δ_downslew_factor = 1//1              ) ::HW_Descr{ℚ}
+function load_hw(O ::Symbol...
+		 ;
+		 Ω_downslew_factor = 1//1,
+		 Δ_downslew_factor = 1//1              ) ::HW_Descr{ℚ}
 
-	@assert select == :default  "What?!??"
-	return default_HW_Descr(;
-							ℤ,
-							Ω_downslew_factor,
-							Δ_downslew_factor)
+    default_HW_Descr(O...;
+		     ℤ,
+		     Ω_downslew_factor,
+		     Δ_downslew_factor)
 end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 2.2. get_hw_data()
@@ -216,16 +215,16 @@ function get_hw_data(hw ::HW_Descr{ℚ}) ::HW_Data
 			 𝛿=𝑡ᵣₑₛ )
 
     return HW_Data(;
-	    𝛺ₘₐₓ, 𝛺ᵣₑₛ,
-	    𝛥ₘₐₓ, 𝛥ᵣₑₛ,
-        𝑡ᵈᵒʷⁿ,
-	    𝑡ᵒᶠᶠₘₐₓ     = 𝑡ₘₐₓ - 𝑡ᵈᵒʷⁿ,
-	    𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ = δround_up(
-		                    max( 𝛺_𝑢𝑝𝑡𝑖𝑚𝑒,
-					 𝛥_𝑢𝑝𝑡𝑖𝑚𝑒,
-					 𝛥𝑡ₘᵢₙ);
-		          𝛿=𝑡ᵣₑₛ),
-	    𝑡ᵣₑₛ, 𝛥𝑡ₘᵢₙ, 𝑡ₘₐₓ
+	           𝛺ₘₐₓ, 𝛺ᵣₑₛ,
+	           𝛥ₘₐₓ, 𝛥ᵣₑₛ,
+                   𝑡ᵈᵒʷⁿ,
+	           𝑡ᵒᶠᶠₘₐₓ     = 𝑡ₘₐₓ - 𝑡ᵈᵒʷⁿ,
+	           𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ = δround_up(
+		                          max( 𝛺_𝑢𝑝𝑡𝑖𝑚𝑒,
+					       𝛥_𝑢𝑝𝑡𝑖𝑚𝑒,
+					       𝛥𝑡ₘᵢₙ    )
+		                          ; 𝛿=𝑡ᵣₑₛ),
+	           𝑡ᵣₑₛ, 𝛥𝑡ₘᵢₙ, 𝑡ₘₐₓ
     )
 end
 
@@ -234,13 +233,12 @@ end
 @doc raw"""
 Function `get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺(hw::HW_Descr ;  𝛺 =hw.𝛺ₘₐₓ, 𝛥 =hw.𝛥ₘₐₓ) `
 
-𝛺-pulse must end this quantity *later* than 𝛥-pulse in order not to break the RWA with max 𝛺,𝛥
+𝛺-pulse must end this quantity *later* than 𝛥-pulse in order not to break the RWA.
 """
-function
-get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺( hw ::HW_Descr{ℚ}
-					;
-					𝛺 :: Rad_per_μs_t{ℚ} = hw.𝛺ₘₐₓ,
-					𝛥 :: Rad_per_μs_t{ℚ} = hw.𝛥ₘₐₓ ) ::μs_t{ℚ}
+function get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺( hw ::HW_Descr{ℚ}
+		             ;
+		             𝛺 :: Rad_per_μs_t{ℚ} = hw.𝛺ₘₐₓ,
+		             𝛥 :: Rad_per_μs_t{ℚ} = hw.𝛥ₘₐₓ ) ::μs_t{ℚ}
 
 	( ; 𝛺ₘₐₓ, 𝛺ᵣₑₛ, 𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, 𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤, φᵣₑₛ,
 		𝛥ₘₐₓ, 𝛥ᵣₑₛ, 𝛥_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, 𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
@@ -268,13 +266,13 @@ abstract type Evolution_t end
     pΔ     :: Pulse__Δ_BangBang{ℚ}
 
     𝑡₀     ::μs_t{ℚ}
-	Ω_𝑡ᵒⁿ  ::μs_t{ℚ}
+    Ω_𝑡ᵒⁿ  ::μs_t{ℚ}
     Ω_𝑡ᵒᶠᶠ ::μs_t{ℚ}
-	𝑇      ::μs_t{ℚ}
+    𝑇      ::μs_t{ℚ}
 
     ε      ::ℝ
 
-	hw     ::HW_Descr
+    hw     ::HW_Descr
 end
 
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 3.1.a. Ω Constructor
@@ -309,7 +307,7 @@ The quantities mentioned above are defined in the named tuple returned by
 ```julia
     (ev::Evolution_Ω)(𝛺 ::Rad_per_μs_t{ℚ}
                       ;
-                      ϕ ::Vector{ℂ},
+                      𝚷 ::Hermitian{ℂ,Matrix{ℂ}},
                       R ::Hermitian{ℂ,Matrix{ℂ}},
                       ψ ::Vector{ℂ}              ) ::ℂ
 ```
@@ -319,9 +317,9 @@ The quantities mentioned above are defined in the named tuple returned by
     The argument `ψ` gives the initial state of the evolution.
     After the function returns, the **vector** `ψ` **contains the final state** of the evolution!
 
-Evaluates ``(\phi \mid U_R(\Omega) \psi)``, where ``U_R(\Omega)`` stands for the quantum evolution
-with Rabi frequency ``\Omega`` and the detuning given in the evolution object, with the
-"Rydberg"-term ``\hbar R`` in the Hamiltonian, i.e.,
+Evaluates ``(\psi U_R(\Omega)^\dag \mid \Pi U_R(\Omega) \psi)``, where ``U_R(\Omega)`` stands for
+the quantum evolution with Rabi frequency ``\Omega`` and the detuning given in the evolution object,
+with the "Rydberg"-term ``\hbar R`` in the Hamiltonian, i.e.,
 ```math
 H/\hbar = \frac{\Omega}{2} X - \Delta |1\rangle\langle1| + R,
 ```
@@ -383,35 +381,36 @@ end #^ Evolution_Ω()
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 3.1.b. Ω Callable
 function (ev::Evolution_Ω)(𝛺 ::Rad_per_μs_t{ℚ}
                            ;
-                           ϕ ::Vector{ℂ},
+                           𝚷 ::Hermitian{ℂ,Matrix{ℂ}},
                            R ::Hermitian{ℂ,Matrix{ℂ}},
-                           ψ ::Vector{ℂ}              ) ::ℂ
+                           ψ ::Vector{ℂ}              ) ::ℝ
 
-    @assert length(ϕ) == length(ψ)
-    @assert ( length(ϕ) , length(ψ) ) == size(R)
+    @assert (length(ψ),length(ψ)) == size(𝚷)
+    @assert size(𝚷) == size(R)
 
 
-	(; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ) = get_hw_data(ev.hw)
-	# (; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ, 𝑡ᵒᶠᶠₘₐₓ,𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ) = get_hw_info(hw)
+    (; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ) = get_hw_data(ev.hw)
+    # (; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ, 𝑡ᵒᶠᶠₘₐₓ,𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ) = get_hw_info(hw)
 
-	pΩ = Pulse__Ω_BangBang{ℚ,ℝ}(ev.Ω_𝑡ᵒⁿ, ev.Ω_𝑡ᵒᶠᶠ, ev.𝑇,
+    pΩ = Pulse__Ω_BangBang{ℚ,ℝ}(ev.Ω_𝑡ᵒⁿ, ev.Ω_𝑡ᵒᶠᶠ, ev.𝑇,
                                 𝛺
-								;   ev.hw.𝛺ₘₐₓ, ev.hw.𝛺ᵣₑₛ,
-									ev.hw.𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, ev.hw.𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
-									ev.hw.φᵣₑₛ,
-									ev.hw.𝑡ₘₐₓ, ev.hw.𝑡ᵣₑₛ, ev.hw.𝛥𝑡ₘᵢₙ)
-	DOT_RydSim._check(pΩ)
+				;   ev.hw.𝛺ₘₐₓ, ev.hw.𝛺ᵣₑₛ,
+				ev.hw.𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, ev.hw.𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
+				ev.hw.φᵣₑₛ,
+				ev.hw.𝑡ₘₐₓ, ev.hw.𝑡ᵣₑₛ, ev.hw.𝛥𝑡ₘᵢₙ)
+    DOT_RydSim._check(pΩ)
 
 
-	schröd!(  ψ,   ℝ( ev.𝑇 )
-			  ;
+    schröd!(  ψ,   ℝ( ev.𝑇 )
+	      ;
               𝑡₀ = ℝ( ev.𝑡₀ ),
               Ω  = pΩ,
-			  Δ  = ev.pΔ,
-			  ε  = ev.ε,
-			  R             )
+	      Δ  = ev.pΔ,
+	      ε  = ev.ε,
+	      R             )
 
-	return ϕ' ⋅ ψ
+    return ψ'⋅𝚷⋅ψ |> ℜ
+    #               ^ discard imaginary part that may arise from inexact arithmetic
 end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 3.2. Δ Evolution
@@ -420,13 +419,13 @@ end
     pΩ     :: Pulse__Ω_BangBang{ℚ,ℝ}
 
     𝑡₀     ::μs_t{ℚ}
-	Δ_𝑡ᵒⁿ  ::μs_t{ℚ}
+    Δ_𝑡ᵒⁿ  ::μs_t{ℚ}
     Δ_𝑡ᵒᶠᶠ ::μs_t{ℚ}
-	𝑇      ::μs_t{ℚ}
+    𝑇      ::μs_t{ℚ}
 
     ε      ::ℝ
 
-	hw     ::HW_Descr
+    hw     ::HW_Descr
 end
 
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 3.2.a. Δ Constructor
@@ -461,7 +460,7 @@ The quantities mentioned above are defined in the named tuple returned by
 ```julia
     (ev::Evolution_Δ)(𝛥 ::Rad_per_μs_t{ℚ}
                       ;
-                      ϕ ::Vector{ℂ},
+                      𝚷 ::Hermitian{ℂ,Matrix{ℂ}},
                       R ::Hermitian{ℂ,Matrix{ℂ}},
                       ψ ::Vector{ℂ}              ) ::ℂ
 ```
@@ -471,9 +470,9 @@ The quantities mentioned above are defined in the named tuple returned by
     The argument `ψ` gives the initial state of the evolution.
     After the function returns, the **vector** `ψ` **contains the final state** of the evolution!
 
-Evaluates ``(\phi \mid U_R(\Delta) \psi)``, where ``U_R(\Delta)`` stands for the quantum evolution
-with detuning ``\Delta`` and the Rabi frequency given in the evolution object, with the
-"Rydberg"-term ``\hbar R`` in the Hamiltonian, i.e.,
+Evaluates ``(\psi U_R(\Delta)^\dag \mid \Pi U_R(\Delta) \psi)``, where ``U_R(\Delta)`` stands for
+the quantum evolution with detuning ``\Delta`` and the Rabi frequency given in the evolution object,
+with the "Rydberg"-term ``\hbar R`` in the Hamiltonian, i.e.,
 ```math
 H/\hbar = \frac{\Omega}{2} X - \Delta |1\rangle\langle1| + R,
 ```
@@ -490,8 +489,8 @@ function Evolution_Δ( 𝑡ᵒⁿ  ::μs_t{ℚ},
                           get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺(hw;𝛺,𝛥=get_hw_data(hw).𝛥ₘₐₓ) +
                           get_hw_data(hw).𝑡ᵈᵒʷⁿ                            )   ::Evolution_Δ
 
-	(; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ, 𝑡ᵈᵒʷⁿ,𝑡ᵒᶠᶠₘₐₓ,𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ, 𝑡ᵣₑₛ,𝑡ₘₐₓ) =
-        get_hw_data(hw)
+    (; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ, 𝑡ᵈᵒʷⁿ,𝑡ᵒᶠᶠₘₐₓ,𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ, 𝑡ᵣₑₛ,𝑡ₘₐₓ) =
+            get_hw_data(hw)
     𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺 =
         get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺(hw;𝛺, 𝛥=𝛥ₘₐₓ)
 
@@ -514,12 +513,12 @@ function Evolution_Δ( 𝑡ᵒⁿ  ::μs_t{ℚ},
     Ω_𝑡ᵒⁿ  = 𝑡ᵒⁿ
     Ω_𝑡ᵒᶠᶠ = 𝑡ᵒᶠᶠ + get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺(hw;𝛺, 𝛥=𝛥ₘₐₓ)
 
-	pΩ = Pulse__Ω_BangBang{ℚ,ℝ}(Ω_𝑡ᵒⁿ, Ω_𝑡ᵒᶠᶠ, 𝑇, 𝛺
-								;   hw.𝛺ₘₐₓ, hw.𝛺ᵣₑₛ,
-									hw.𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, hw.𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
-									hw.φᵣₑₛ,
-									hw.𝑡ₘₐₓ, hw.𝑡ᵣₑₛ, hw.𝛥𝑡ₘᵢₙ)
-	DOT_RydSim._check(pΩ)
+    pΩ = Pulse__Ω_BangBang{ℚ,ℝ}(Ω_𝑡ᵒⁿ, Ω_𝑡ᵒᶠᶠ, 𝑇, 𝛺
+				;   hw.𝛺ₘₐₓ, hw.𝛺ᵣₑₛ,
+				hw.𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, hw.𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
+				hw.φᵣₑₛ,
+				hw.𝑡ₘₐₓ, hw.𝑡ᵣₑₛ, hw.𝛥𝑡ₘᵢₙ)
+    DOT_RydSim._check(pΩ)
 
     #
     # Construct it:
@@ -536,34 +535,35 @@ end #^ Evolution_Δ()
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 3.2.b. Δ Callable
 function (ev::Evolution_Δ)(𝛥 ::Rad_per_μs_t{ℚ}
                            ;
-                           ϕ ::Vector{ℂ},
+                           𝚷 ::Hermitian{ℂ,Matrix{ℂ}},
                            R ::Hermitian{ℂ,Matrix{ℂ}},
-                           ψ ::Vector{ℂ}              ) ::ℂ
+                           ψ ::Vector{ℂ}              ) ::ℝ
 
-    @assert length(ϕ) == length(ψ)
-    @assert ( length(ϕ) , length(ψ) ) == size(R)
+    @assert (length(ψ),length(ψ)) == size(𝚷)
+    @assert size(𝚷) == size(R)
 
 
-	(; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ) = get_hw_data(ev.hw)
-	# (; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ, 𝑡ᵒᶠᶠₘₐₓ,𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ) = get_hw_info(hw)
+    (; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ) = get_hw_data(ev.hw)
+    # (; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ, 𝑡ᵒᶠᶠₘₐₓ,𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ) = get_hw_info(hw)
 
-	pΔ = Pulse__Δ_BangBang{ℚ}(ev.Δ_𝑡ᵒⁿ, ev.Δ_𝑡ᵒᶠᶠ, ev.𝑇,
+    pΔ = Pulse__Δ_BangBang{ℚ}(ev.Δ_𝑡ᵒⁿ, ev.Δ_𝑡ᵒᶠᶠ, ev.𝑇,
                               𝛥
-							  ;   ev.hw.𝛥ₘₐₓ, ev.hw.𝛥ᵣₑₛ,
-							      ev.hw.𝛥_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, ev.hw.𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
-							      ev.hw.𝑡ₘₐₓ, ev.hw.𝑡ᵣₑₛ, ev.hw.𝛥𝑡ₘᵢₙ)
-	DOT_RydSim._check(pΔ)
+			      ;   ev.hw.𝛥ₘₐₓ, ev.hw.𝛥ᵣₑₛ,
+			      ev.hw.𝛥_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, ev.hw.𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
+			      ev.hw.𝑡ₘₐₓ, ev.hw.𝑡ᵣₑₛ, ev.hw.𝛥𝑡ₘᵢₙ)
+    DOT_RydSim._check(pΔ)
 
 
-	schröd!(  ψ, ℝ(ev.𝑇)
-			  ;
-              𝑡₀ = ev.𝑡₀,
-			  Δ  = pΔ,
+    schröd!(  ψ, ℝ(ev.𝑇)
+	      ;
+              𝑡₀ = ℝ( ev.𝑡₀ ),
+	      Δ  = pΔ,
               Ω  = ev.pΩ,
-			  ε  = ev.ε,
-			  R             )
+	      ε  = ev.ε,
+	      R             )
 
-	return ϕ' ⋅ ψ
+    return ψ'⋅𝚷⋅ψ |> ℜ
+    #               ^ discard imaginary part that may arise from inexact arithmetic
 end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 3.3. EVF
@@ -574,14 +574,11 @@ Function
     evf(𝑥  ::Rad_per_μs_t{ℚ},
         ev ::EVO
         ;
-        ϕ ::Vector{ℂ},
+        𝚷 ::Hermitian{ℂ,Matrix{ℂ}},
         R ::Hermitian{ℂ,Matrix{ℂ}},
         ψ ::Vector{ℂ}              ) ::ℝ   where{EVO<:Evolution_t}
 ```
-Calls the callable of the given Evolution object, `ev`, with initial state ψ and observable
-```math
-    2|\phi\rangle\langle\phi| - 1
-```
+Calls the callable of the given Evolution object, `ev`, with initial state ψ and observable 𝚷.
 
 !!! warning "Warning: ψ is updated!"
 
@@ -591,12 +588,12 @@ Calls the callable of the given Evolution object, `ev`, with initial state ψ an
 function evf(𝑥  ::Rad_per_μs_t{ℚ},
              ev ::EVO
              ;
-             ϕ ::Vector{ℂ},
+             𝚷 ::Hermitian{ℂ,Matrix{ℂ}},
              R ::Hermitian{ℂ,Matrix{ℂ}},
              ψ ::Vector{ℂ},
              kwargs...                  ) ::ℝ   where{EVO<:Evolution_t}
 
-    2⋅abs²( ev(𝑥; ϕ,R,ψ, kwargs...) )   - 1
+    ev(𝑥; 𝚷,R,ψ, kwargs...)
 end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 3.4. Fourier band bound
@@ -650,8 +647,8 @@ The type parameter `PType` can be one of: `PType_Ω`, `PType_Δ`.
   * The callables
 
     ```julia
-        function (sr::Shift_Rule{PType_Ω})(ev ::Evolution_Ω ; ϕ,R,ψ) ::ℝ
-        function (sr::Shift_Rule{PType_Δ})(ev ::Evolution_Δ ; ϕ,R,ψ) ::ℝ
+        function (sr::Shift_Rule{PType_Ω})(ev ::Evolution_Ω ; 𝚷,R,ψ) ::ℝ
+        function (sr::Shift_Rule{PType_Δ})(ev ::Evolution_Δ ; 𝚷,R,ψ) ::ℝ
     ```
 
     compute the shift-rule by evaluating the expectation-value function [`evf`](@ref)`()`.
@@ -732,22 +729,23 @@ end
 
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 4.1.b. Callables
 
-(sr::Shift_Rule{PType_Ω})(ev ::Evolution_Ω ; ϕ,R,ψ) ::ℝ =
+(sr::Shift_Rule{PType_Ω})(ev ::Evolution_Ω ; 𝚷,R,ψ) ::ℝ =
     let 𝑥      = sr.𝑥,
         ψᶜᵒᵖʸ  = similar(ψ),
-        f(𝑢)   = evf(𝑢, ev ; ϕ,R, ψ=(ψᶜᵒᵖʸ .= ψ))
+        f(𝑢)   = evf(𝑢, ev ; 𝚷,R, ψ=(ψᶜᵒᵖʸ .= ψ))
 
         sum(   a⋅f(𝑥-𝑠)   for (a,𝑠) ∈ zip( sr.a, sr.𝑠 )   )
     end
 
-(sr::Shift_Rule{PType_Δ})(ev ::Evolution_Δ ; ϕ,R,ψ) ::ℝ =
+(sr::Shift_Rule{PType_Δ})(ev ::Evolution_Δ ; 𝚷,R,ψ) ::ℝ =
     let 𝑥      = sr.𝑥,
         ψᶜᵒᵖʸ  = similar(ψ),
-        f(𝑢)   = evf(𝑢, ev ; ϕ,R, ψ=(ψᶜᵒᵖʸ .= ψ))
+        f(𝑢)   = evf(𝑢, ev ; 𝚷,R, ψ=(ψᶜᵒᵖʸ .= ψ))
 
         sum(   a⋅f(𝑥-𝑠)   for (a,𝑠) ∈ zip( sr.a, sr.𝑠 )   )
     end
 
+# -      -      -      -      -      -      -      -      -      -      -      -      -      -      - 4.1.c. Instances
 # -      -      -      -      -      -      -      -      -      -      -      -      -      -      - • Symmetric Difference Quotient
 
 @doc raw"""

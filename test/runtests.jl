@@ -36,7 +36,12 @@ using JSON # Only for ignoring by JET
     #
     # Basic JET-based package test only:
 
-    test_package(DOT_RydSimDeriv, ignored_modules=(AnyFrameModule(JSON.Parser),) )
+    test_package(DOT_RydSimDeriv,
+                 ignored_modules=(
+                     AnyFrameModule(JSON.Parser),
+                     AnyFrameModule(Base)  # This is the most idiotic line in the history of computer programs...
+                                           # Why not declare vars?!  I hate millenials!
+                 ) )
 
 end
 

@@ -1,5 +1,6 @@
 [deps]
 DOT_NiceMath = "3e56a413-cb61-4004-9b36-fbc90ffc4c6e"
+DOT_StatsHelp = "8148c48a-b060-41fd-b68c-7c28d53d7f5a"
 GenericFFT = "a8297547-1b15-4a5a-a998-a2ac5f1cef28"
 GenericLinearAlgebra = "14197337-ba66-59df-a3e3-ca00e7dcff7a"
 JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
