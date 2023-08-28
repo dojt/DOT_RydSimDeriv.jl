@@ -309,7 +309,7 @@ The quantities mentioned above are defined in the named tuple returned by
                       ;
                       𝚷 ::Hermitian{ℂ,Matrix{ℂ}},
                       R ::Hermitian{ℂ,Matrix{ℂ}},
-                      ψ ::Vector{ℂ}              ) ::ℂ
+                      ψ ::Vector{ℂ}              ) ::ℝ
 ```
 
 !!! warning "Warning: ψ is updated!"
@@ -324,6 +324,8 @@ with the "Rydberg"-term ``\hbar R`` in the Hamiltonian, i.e.,
 H/\hbar = \frac{\Omega}{2} X - \Delta |1\rangle\langle1| + R,
 ```
 where |1⟩ is the Rydberg state vs |0⟩ the ground state.
+
+A numerical error is indicated by a `NaN` return value.
 """
 function Evolution_Ω( 𝑡ᵒⁿ  ::μs_t{ℚ},
                       𝑡ᵒᶠᶠ ::μs_t{ℚ}
@@ -386,7 +388,7 @@ function (ev::Evolution_Ω)(𝛺 ::Rad_per_μs_t{ℚ}
                            ψ ::Vector{ℂ}              ) ::ℝ
 
     @assert (length(ψ),length(ψ)) == size(𝚷)
-    @assert size(𝚷) == size(R)
+    @assert size(R)               == size(𝚷)
 
 
     (; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ) = get_hw_data(ev.hw)
@@ -396,8 +398,8 @@ function (ev::Evolution_Ω)(𝛺 ::Rad_per_μs_t{ℚ}
                                 𝛺
 				;   ev.hw.𝛺ₘₐₓ, ev.hw.𝛺ᵣₑₛ,
 				ev.hw.𝛺_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, ev.hw.𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
-				ev.hw.φᵣₑₛ,
-				ev.hw.𝑡ₘₐₓ, ev.hw.𝑡ᵣₑₛ, ev.hw.𝛥𝑡ₘᵢₙ)
+				ev.hw.𝑡ₘₐₓ, ev.hw.𝑡ᵣₑₛ, ev.hw.𝛥𝑡ₘᵢₙ,
+				ev.hw.φᵣₑₛ)
     DOT_RydSim._check(pΩ)
 
 
@@ -409,8 +411,11 @@ function (ev::Evolution_Ω)(𝛺 ::Rad_per_μs_t{ℚ}
 	      ε  = ev.ε,
 	      R             )
 
-    return ψ'⋅𝚷⋅ψ |> ℜ
-    #               ^ discard imaginary part that may arise from inexact arithmetic
+    #                                                    Make sure arithmetic errors
+    𝑧 = ψ'⋅𝚷⋅ψ  #                       ┌─────────────── resulting in `Inf`'s or `NaN`'s are caught.
+    return (   isfinite(𝑧) ?  ℜ(𝑧)  :  NaN   )
+    #                          └──────────────────────── Discard imaginary part that may
+    #                                                    arise from inexact arithmetic.
 end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 3.2. Δ Evolution
@@ -462,7 +467,7 @@ The quantities mentioned above are defined in the named tuple returned by
                       ;
                       𝚷 ::Hermitian{ℂ,Matrix{ℂ}},
                       R ::Hermitian{ℂ,Matrix{ℂ}},
-                      ψ ::Vector{ℂ}              ) ::ℂ
+                      ψ ::Vector{ℂ}              ) ::ℝ
 ```
 
 !!! warning "Warning: ψ is updated!"
@@ -477,6 +482,8 @@ with the "Rydberg"-term ``\hbar R`` in the Hamiltonian, i.e.,
 H/\hbar = \frac{\Omega}{2} X - \Delta |1\rangle\langle1| + R,
 ```
 where |1⟩ is the Rydberg state vs |0⟩ the ground state.
+
+A numerical error is indicated by a `NaN` return value.
 """
 function Evolution_Δ( 𝑡ᵒⁿ  ::μs_t{ℚ},
                       𝑡ᵒᶠᶠ ::μs_t{ℚ}
@@ -540,7 +547,7 @@ function (ev::Evolution_Δ)(𝛥 ::Rad_per_μs_t{ℚ}
                            ψ ::Vector{ℂ}              ) ::ℝ
 
     @assert (length(ψ),length(ψ)) == size(𝚷)
-    @assert size(𝚷) == size(R)
+    @assert size(R)               == size(𝚷)
 
 
     (; 𝛺ₘₐₓ,𝛺ᵣₑₛ, 𝛥ₘₐₓ,𝛥ᵣₑₛ) = get_hw_data(ev.hw)
@@ -550,7 +557,8 @@ function (ev::Evolution_Δ)(𝛥 ::Rad_per_μs_t{ℚ}
                               𝛥
 			      ;   ev.hw.𝛥ₘₐₓ, ev.hw.𝛥ᵣₑₛ,
 			      ev.hw.𝛥_𝑚𝑎𝑥_𝑢𝑝𝑠𝑙𝑒𝑤, ev.hw.𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤,
-			      ev.hw.𝑡ₘₐₓ, ev.hw.𝑡ᵣₑₛ, ev.hw.𝛥𝑡ₘᵢₙ)
+			      ev.hw.𝑡ₘₐₓ, ev.hw.𝑡ᵣₑₛ, ev.hw.𝛥𝑡ₘᵢₙ
+                              )
     DOT_RydSim._check(pΔ)
 
 
@@ -562,8 +570,11 @@ function (ev::Evolution_Δ)(𝛥 ::Rad_per_μs_t{ℚ}
 	      ε  = ev.ε,
 	      R             )
 
-    return ψ'⋅𝚷⋅ψ |> ℜ
-    #               ^ discard imaginary part that may arise from inexact arithmetic
+    #                                                    Make sure arithmetic errors
+    𝑧 = ψ'⋅𝚷⋅ψ  #                       ┌─────────────── resulting in `Inf`'s or `NaN`'s are caught.
+    return (   isfinite(𝑧) ?  ℜ(𝑧)  :  NaN   )
+    #                          └──────────────────────── Discard imaginary part that may
+    #                                                    arise from inexact arithmetic.
 end
 
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 3.3. EVF
@@ -576,9 +587,9 @@ Function
         ;
         𝚷 ::Hermitian{ℂ,Matrix{ℂ}},
         R ::Hermitian{ℂ,Matrix{ℂ}},
-        ψ ::Vector{ℂ}              ) ::ℝ   where{EVO<:Evolution_t}
+        ψ ::Vector{ℂ}              ) ::ℝ         where{EVO<:Evolution_t}
 ```
-Calls the callable of the given Evolution object, `ev`, with initial state ψ and observable 𝚷.
+Calls the callable of the given Evolution object, `ev`, with initial state ψ and observable 𝚷.  
 
 !!! warning "Warning: ψ is updated!"
 

@@ -24,7 +24,9 @@ Based on [[https://github.com/dojt/DOT_RydSim.jl][DOT_RydSim.jl]]
 
 /Time goes up!/
 
-*** *v0.2.0*  API-breaking: Now Eval-functions take `𝚷`-matrix instead of ϕ-vector
+*** *v0.2.1*  New Policy: Evolution functions now return `NaN` in case of arithmetic errors.
+
+*** *v0.2.0*  API-breaking: Now Evol-functions take `𝚷`-matrix instead of ϕ-vector
 
 *** *v0.1.0*  Initial version
 
