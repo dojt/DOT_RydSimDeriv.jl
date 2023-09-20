@@ -82,8 +82,9 @@ Banchi-Crooks's "stochastic" shift rules, and the "Nyquist" shift rules.
 
 EVF = Expectation Value Function
 
-* Types [`Evolution_Ω`](@ref), [`Evolution_Δ`](@ref) with constructors and callables;
-  the callables (almost) compute the expectation value function
+* Structs [`Evolution_Ω`](@ref), [`Evolution_Δ`](@ref) with constructors and callables; the
+  callables (almost) compute the expectation value function; the abstract type `Evolution_t` is
+  common supertype of `Evolution_Ω` and `Evolution_Δ`.
 * Function [`evf`](@ref)`()` — based on the callable for the given evolution object.
 * Function [`λ`](@ref)`()`   — approx. lower bound on wavelength in the Fourier spectrum.
 
@@ -100,7 +101,7 @@ module DOT_RydSimDeriv
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 1.1. Exports
 export load_hw,
        HW_Data, get_hw_data, get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺
-export Evolution_Ω, Evolution_Δ,
+export Evolution_t, Evolution_Ω, Evolution_Δ,
        evf,
        λ
 export Shift_Rule, PType_Ω, PType_Δ
