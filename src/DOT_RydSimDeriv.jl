@@ -86,7 +86,9 @@ EVF = Expectation Value Function
   callables (almost) compute the expectation value function; the abstract type `Evolution_t` is
   common supertype of `Evolution_Ω` and `Evolution_Δ`.
 * Function [`evf`](@ref)`()` — based on the callable for the given evolution object.
-* Function [`λ`](@ref)`()`   — approx. lower bound on wavelength in the Fourier spectrum.
+* Function [`𝛥𝑡`](@ref)`()`  — approximation to the pulse duration
+* Function [`λ`](@ref)`()` — approx. lower bound on wavelength in the Fourier spectrum (based
+  on `𝛥𝑡()`)
 
 ### Shift rules — EVF-eval based
 
@@ -103,7 +105,7 @@ export load_hw,
        HW_Data, get_hw_data, get_hw_𝑡ᵒᶠᶠ⁻ᵈⁱᶠᶠ𝛥𝛺
 export Evolution_t, Evolution_Ω, Evolution_Δ,
        evf,
-       λ
+       𝛥𝑡, λ
 export Shift_Rule, PType_Ω, PType_Δ
 
 
@@ -615,12 +617,20 @@ end
 # ——————————————————————————————————————————————————————————————————————————————————————————————————— 3.4. Fourier band bound
 
 @doc raw"""
-Function `λ( ev ::Evolution )`
+Function `𝛥𝑡( ev ::Evolution ) ::μs_t{ℚ}`
 
-Returns a simple approximate lower bound to the wavelengths occuring in the Fourier spectrum.
+Returns a simple approximation to the pulse duration.
 """
-λ(ev ::Evolution_Ω) =   2π/ustrip(μs, ev.Ω_𝑡ᵒᶠᶠ - ev.Ω_𝑡ᵒⁿ )
-λ(ev ::Evolution_Δ) =   2π/ustrip(μs, ev.Δ_𝑡ᵒᶠᶠ - ev.Δ_𝑡ᵒⁿ )
+𝛥𝑡(ev ::Evolution_Ω) ::μs_t{ℚ}  =   ev.Ω_𝑡ᵒᶠᶠ - ev.Ω_𝑡ᵒⁿ
+𝛥𝑡(ev ::Evolution_Δ) ::μs_t{ℚ}  =   ev.Δ_𝑡ᵒᶠᶠ - ev.Δ_𝑡ᵒⁿ
+
+@doc raw"""
+Function `λ( ev ::Evolution ) ::ℝ`
+
+Returns a simple (based on [`𝛥𝑡`](@ref)`()`) approximate lower bound to the wavelengths occuring
+in the Fourier spectrum.
+"""
+λ(ev ::Evolution_t) =   2π/ustrip(μs, 𝛥𝑡(ev))
 
 
 # ******************************************************************************************************************************
