@@ -6,11 +6,11 @@ Derivatives for quantum simulations of arrays of Rydberg atoms.
 Based on [[https://github.com/dojt/DOT_RydSim.jl][DOT_RydSim.jl]]
 
 
-** TODO Tasks & Questions For Future Versions [0/2]
+** TODO Tasks & Questions For Future Versions [1/2]
 
-    + [ ] =JET.jl=-testing is 💩 because all errors that occur in ~Base~ (!!) are excluded.
+    + [X] =JET.jl=-testing is 💩 because all errors that occur in ~Base~ (!!) are excluded.
 
-      - [ ] There are currently no other tests....
+      - [X] There are currently no other tests....
 
     + [ ] Shift rules and whatnot have moved to package =Rydberg.jl=
       (in repo =Secret-ShiftRules=).  This means:
@@ -23,6 +23,9 @@ Based on [[https://github.com/dojt/DOT_RydSim.jl][DOT_RydSim.jl]]
 ** Version History
 
 /Time goes up!/
+
+*** *v0.4.0*  API BREAKING!  Moved to `𝛿𝑡ᵉᶠᶠ`-interface for evolutions
+
 
 *** *v0.3.0*  New `𝛥𝑡()` function; `𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ𝛺`, `𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ𝛥` in `get_hw_data()`.
 
