@@ -711,10 +711,10 @@ end
 @doc raw"""
 Function `𝛥𝑡( ev ::Evolution ) ::μs_t{ℚ}`
 
-Returns a simple approximation of the pulse duration.
+Returns a simple approximation of the effective pulse duration.
 """
-𝛥𝑡(ev ::Evolution_Ω) ::μs_t{ℚ}  =   ev.Ω_𝑡ᵒᶠᶠ - ev.Ω_𝑡ᵒⁿ
-𝛥𝑡(ev ::Evolution_Δ) ::μs_t{ℚ}  =   ev.Δ_𝑡ᵒᶠᶠ - ev.Δ_𝑡ᵒⁿ
+𝛥𝑡(ev ::Evolution_Ω) ::μs_t{ℚ}  =   ev.Ω_𝑡ᵉᶠᶠ
+𝛥𝑡(ev ::Evolution_Δ) ::μs_t{ℚ}  =   ev.Δ_𝑡ᵉᶠᶠ
 
 @doc raw"""
 Function `λ( ev ::Evolution ) ::ℝ`
