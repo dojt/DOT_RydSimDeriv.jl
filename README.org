@@ -24,8 +24,10 @@ Based on [[https://github.com/dojt/DOT_RydSim.jl][DOT_RydSim.jl]]
 
 /Time goes up!/
 
-*** *v0.4.0*  API BREAKING!  Moved to `𝛿𝑡ᵉᶠᶠ`-interface for evolutions
+*** *v0.4.1*  Fixed `𝛥𝑡()`
 
+
+*** *v0.4.0*  API BREAKING!  Moved to `𝛿𝑡ᵉᶠᶠ`-interface for evolutions
 
 *** *v0.3.0*  New `𝛥𝑡()` function; `𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ𝛺`, `𝑡ᵒⁿ_𝑡ᵒᶠᶠₘᵢₙ𝛥` in `get_hw_data()`.
 
