@@ -400,7 +400,7 @@ function Evolution_Ω( 𝑡ᵒⁿ    ::μs_t{ℚ},
         𝛿𝑡¹ ≥ 0μs || throw(ArgumentError("𝛿𝑡ᵉᶠᶠ ($𝛿𝑡ᵉᶠᶠ) too small for maximum parameter value ($𝛺ₘₐₓ)"))
 
         𝑇ₘᵢₙ = max( 𝑡ᵒⁿ + 𝛿𝑡ꜛ + 𝛿𝑡¹ + 𝛿𝑡ꜜ ,
-                    Δ_𝑡ᵒᶠᶠ + 𝛥/hw.𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤 )
+                    Δ_𝑡ᵒᶠᶠ + abs(𝛥)/hw.𝛥_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤 )
 
         if 𝑇 == (-1//1)μs
             #
@@ -592,7 +592,7 @@ function Evolution_Δ( 𝑡ᵒⁿ    ::μs_t{ℚ},
         𝛿𝑡¹ ≥ 0μs || throw(ArgumentError("𝛿𝑡ᵉᶠᶠ ($𝛿𝑡ᵉᶠᶠ) too small for maximum parameter value ($𝛥ₘₐₓ)"))
 
         𝑇ₘᵢₙ = max( 𝑡ᵒⁿ + 𝛿𝑡ꜛ + 𝛿𝑡¹ + 𝛿𝑡ꜜ ,
-                    Ω_𝑡ᵒᶠᶠ + 𝛺/hw.𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤 )
+                    Ω_𝑡ᵒᶠᶠ + abs(𝛺)/hw.𝛺_𝑚𝑎𝑥_𝑑𝑜𝑤𝑛𝑠𝑙𝑒𝑤 )
 
         if 𝑇 == (-1//1)μs
             #
