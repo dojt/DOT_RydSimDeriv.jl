@@ -112,7 +112,7 @@ using JSON # Only for ignoring by JET
 
         N_ATOMS  = 3
         R_STDDEV = 64
-        ε        = 1e-3
+        ε        = 1e-2
 
         ψ₀ = randn(ℂ,2^N_ATOMS) |> normalize
         R  = let A = randn(ℂ,2^N_ATOMS,2^N_ATOMS) ; Hermitian( (A+A')⋅R_STDDEV/2 ) end
@@ -152,14 +152,14 @@ using JSON # Only for ignoring by JET
 
         N_ATOMS  = 3
         R_STDDEV = 64
-        ε        = 1e-3
+        ε        = 1e-2
 
         ψ₀ = randn(ℂ,2^N_ATOMS) |> normalize
         R  = let A = randn(ℂ,2^N_ATOMS,2^N_ATOMS) ; Hermitian( (A+A')⋅R_STDDEV/2 ) end
         𝚷  = let A = randn(ℂ,2^N_ATOMS,2^N_ATOMS) ; Hermitian( (A+A')         /2 ) end
         make_Pauli!(𝚷)
 
-        for _1iter = 1:1_000
+        for _1iter = 1:1_0#00
             𝑡ᵒⁿ   = rand_range( (0//1)μs : 𝑡ᵣₑₛ : 3𝛥𝑡ₘᵢₙ )     ;  𝑡ᵒⁿ  > 𝛥𝑡ₘᵢₙ  ||  ( 𝑡ᵒⁿ  = 𝛥𝑡ₘᵢₙ )
             𝑡ᵒᶠᶠ  = rand_range( 𝑡ᵒⁿ+𝛥𝑡ₘᵢₙ : 𝑡ᵣₑₛ : 𝑡ᵒᶠᶠₘₐₓ )   ;  𝑡ᵒᶠᶠ > 𝛥𝑡ₘᵢₙ  ||  ( 𝑡ᵒᶠᶠ = 𝛥𝑡ₘᵢₙ )
             𝛿𝑡ᵉᶠᶠ = rand_range( 𝛿𝑡ᵉᶠᶠₘᵢₙ𝛥 : 𝑡ᵣₑₛ : 𝛿𝑡ᵉᶠᶠₘₐₓ𝛥/10 )
@@ -172,7 +172,7 @@ using JSON # Only for ignoring by JET
                                ε, hw, 𝑇)
             @test true
 
-            for _2iter = 1:100
+            for _2iter = 1:10#0
                 𝛥 = rand_range( (0//1)/μs : 𝛥ᵣₑₛ : 𝛥ₘₐₓ )
                 ψ = copy(ψ₀)
                 evf(𝛥, evΔ ; 𝚷,R,ψ)

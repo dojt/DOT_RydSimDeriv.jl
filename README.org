@@ -24,8 +24,10 @@ Based on [[https://github.com/dojt/DOT_RydSim.jl][DOT_RydSim.jl]]
 
 /Time goes up!/
 
-*** *v0.4.2*  Fixed bug `Evolution_𝑋`-constructors
+*** *v0.4.3*  Removed JET.jl-testing from runtest.jl
 
+
+*** *v0.4.2*  Fixed bug `Evolution_𝑋`-constructors
 
 *** *v0.4.1*  Fixed `𝛥𝑡()`
 
